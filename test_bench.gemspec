@@ -22,4 +22,6 @@ Gem::Specification.new do |s|
   s.executables = Dir.glob('executables/*').map { |executable| File.basename(executable) }
 
   s.files = Dir.glob('lib/**/*')
+
+  s.add_runtime_dependency 'test_bench-fixture'
 end
