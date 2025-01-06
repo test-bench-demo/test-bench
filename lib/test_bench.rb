@@ -15,9 +15,3 @@ rescue LoadError
 end
 
 TestBench::ImportConstants.(TestBench)
-
-module TestBench
-  Session = Test::Session
-  Run = Test::Run
-  CLI = Test::CLI
-end
