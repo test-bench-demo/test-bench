@@ -15,15 +15,15 @@ module TestBench
       end
       attr_writer :session
 
-      def get_files
-        @get_files ||= GetFiles::Substitute.build
+      def select_files
+        @select_files ||= SelectFiles::Substitute.build
       end
-      attr_writer :get_files
+      attr_writer :select_files
 
-      def executor
-        @executor ||= Executor::Substitute.build
+      def isolate
+        @isolate ||= Isolate::Substitute.build
       end
-      attr_writer :executor
+      attr_writer :isolate
 
       def random_generator
         @random_generator ||= Pseudorandom::Generator.build
@@ -35,14 +35,14 @@ module TestBench
       end
       attr_writer :path_sequence
 
-      def self.build(exclude: nil, session: nil)
+      def self.build(exclude: nil, session: nil, isolate: nil)
         instance = new
 
-        GetFiles.configure(instance, exclude:)
-
-        Executor::Serial.configure(instance)
+        SelectFiles.configure(instance, exclude:)
 
         Pseudorandom::Generator.configure(instance)
+
+        Isolate.configure(instance, session:, isolate:)
 
         if session.nil?
           session = Session.build do |telemetry|
@@ -69,10 +69,10 @@ module TestBench
         instance.(path)
       end
 
-      def self.configure(receiver, exclude: nil, session: nil, attr_name: nil)
+      def self.configure(receiver, exclude: nil, session: nil, isolate: nil, attr_name: nil)
         attr_name ||= :run
 
-        instance = build(exclude:, session:)
+        instance = build(exclude:, session:, isolate:)
         receiver.public_send(:"#{attr_name}=", instance)
       end
 
@@ -89,7 +89,7 @@ module TestBench
 
         telemetry.record(Started.build(random_generator.seed))
 
-        executor.start
+        isolate.start
 
         if not block.nil?
           block.(self)
@@ -99,7 +99,7 @@ module TestBench
           end
         end
 
-        executor.finish
+        isolate.stop
 
         if session.passed?
           result = true
@@ -115,14 +115,9 @@ module TestBench
       def path(path)
         self.path_sequence += 1
 
-        get_files.(path) do |file|
-          executor.execute(file)
+        select_files.(path) do |file|
+          isolate.run(file)
         end
-
-      rescue GetFiles::FileError
-        warn "#{path}: No such file or directory"
-
-        session.record_failure
       end
       alias :<< :path
 

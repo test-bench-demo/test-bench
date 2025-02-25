@@ -58,10 +58,12 @@ module TestBench
         arguments ||= ::ARGV
         env ||= ::ENV
 
+        isolate = Parallel::Isolate.build(instance)
+
         instance = new(*arguments)
         instance.env = env
         Output::Writer.configure(instance)
-        Run.configure(instance)
+        Run.configure(instance, isolate:)
         Pseudorandom::Generator.configure(instance)
         instance
       end
@@ -187,6 +189,16 @@ module TestBench
 
             env['TEST_OUTPUT_STYLING'] = output_styling_text
 
+          when '-j', '--parallel-processes'
+            parallel_processes_text = switch_value(argument_index) do
+              require 'etc'
+              Etc.nprocessors.to_s
+            end
+
+            parallel_processes = Integer(parallel_processes_text)
+
+            env['TEST_PARALLEL_PROCESSES'] = parallel_processes.to_s
+
           when '-p', '-P', '--require-passing-test', '--no-require-passing-test'
             if not negated?(switch)
               require_passing_tests = 'on'
@@ -228,10 +240,12 @@ module TestBench
 
         Configuration Options:
         \t-d, --[no]detail             Always show (or hide) details (Default: #{Session::Output::Detail.default})
-        \t-x, --[no-]exclude PATTERN   Do not execute test files matching PATTERN (Default: #{Run::GetFiles::Defaults.exclude_patterns.inspect})
+        \t-x, --[no-]exclude PATTERN   Do not execute test files matching PATTERN (Default: #{Run::SelectFiles::Defaults.exclude_patterns.inspect})
         \t-f, --[no-]only-failure      Don't display output for test files that pass (Default: #{Run::Output::File::Defaults.only_failure ? 'on' : 'off'})
         \t-o, --output-styling [on|off|detect]
         \t                             Render output coloring and font styling escape codes (Default: #{Output::Writer::Styling.default})
+        \t-j, --parallel-jobs [NUMBER]
+                                       Run tests in parallel across NUMBER processes (Default: #{Parallel::Isolate::Defaults.parallel_processes})"
         \t-p, --[no-]passing-test      Requires at least one passing test in order to exit successfully (Default: #{Defaults.require_passing_test ? 'on' : 'off'})
         \t-s, --seed NUMBER            Sets pseudo-random number seed (Default: not set)
 
@@ -248,6 +262,7 @@ module TestBench
         \tTEST_EXCLUDE_FILE_PATTERN    Same as -x or --exclude-file-pattern
         \tTEST_OUTPUT_ONLY_FAILURE     Same as -f or --only-failure
         \tTEST_OUTPUT_STYLING          Same as -o or --output-styling
+        \tTEST_PARALLEL_PROCESSES      Same as -j or --parallel-jobs
         \tTEST_REQUIRE_PASSING_TEST    Same as -p or --passing-test
         \tTEST_SEED                    Same as -s or --seed
 

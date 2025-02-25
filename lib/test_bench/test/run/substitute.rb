@@ -3,16 +3,12 @@ module TestBench
     class Run
       module Substitute
         def self.build
-          Run.build
+          Run.new
         end
 
         class Run < Run
-          def self.build
-            new
-          end
-
           def path?(path)
-            get_files.path?(path)
+            select_files.path?(path)
           end
 
           def set_result(result)
