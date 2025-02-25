@@ -58,7 +58,7 @@ module TestBench
         arguments ||= ::ARGV
         env ||= ::ENV
 
-        isolate = Parallel::Isolate.build(instance)
+        isolate = Parallel::Isolate.build
 
         instance = new(*arguments)
         instance.env = env
