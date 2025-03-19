@@ -1,13 +1,16 @@
 module TestBench
   module Test
     class Run
-      class SelectFiles
+      class GetFiles
         module Substitute
           def self.build
-            SelectFiles.new
+            GetFiles.new
           end
 
-          class SelectFiles
+          class GetFiles
+            attr_accessor :file_error
+            def file_error? = !!file_error
+
             def files
               @files ||= []
             end
@@ -18,8 +21,18 @@ module TestBench
               @paths ||= []
             end
 
-            def call(path, &block)
-              self.paths << path
+            def file_error!
+              self.file_error = true
+            end
+
+            def call(path, *paths, &block)
+              [path, *paths].each do |path|
+                self.paths << path
+              end
+
+              if file_error?
+                raise FileError
+              end
 
               files.each(&block)
             end

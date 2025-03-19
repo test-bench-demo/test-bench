@@ -1,7 +1,9 @@
 module TestBench
   module Test
     class Run
-      class SelectFiles
+      class GetFiles
+        FileError = Class.new(RuntimeError)
+
         attr_reader :exclude_patterns
 
         def initialize(exclude_patterns)
@@ -19,44 +21,50 @@ module TestBench
           new(exclude_patterns)
         end
 
-        def self.call(path, exclude: nil, &block)
+        def self.call(path, *paths, exclude: nil, &block)
           instance = build(exclude:)
-          instance.(path, &block)
+          instance.(path, *paths, &block)
         end
 
         def self.configure(receiver, exclude: nil, attr_name: nil)
-          attr_name ||= :select_files
+          attr_name ||= :get_files
 
           instance = build(exclude:)
           receiver.public_send(:"#{attr_name}=", instance)
         end
 
-        def call(path, &block)
-          if ::File.extname(path).empty?
-            pattern = ::File.join(path, '**/*.rb')
-          else
-            pattern = path
-          end
+        def call(path, *paths, &block)
+          paths = [path, *paths]
 
-          files = Dir.glob(pattern)
-
-          if files.empty?
-            files << path
-          end
-
-          files.each do |file|
-            excluded = exclude_patterns.any? do |exclude_pattern|
-              exclude_pattern = ::File.join('*', exclude_pattern)
-
-              ::File.fnmatch?(exclude_pattern, file, ::File::FNM_EXTGLOB)
+          paths.each do |path|
+            if ::File.extname(path).empty?
+              pattern = ::File.join(path, '**/*.rb')
+            else
+              pattern = path
             end
 
-            if excluded
-              next
-            end
+            assure_extant(path)
 
-            block.(file)
+            Dir.glob(pattern).each do |file|
+              excluded = exclude_patterns.any? do |exclude_pattern|
+                exclude_pattern = ::File.join('*', exclude_pattern)
+
+                ::File.fnmatch?(exclude_pattern, file, ::File::FNM_EXTGLOB)
+              end
+
+              if excluded
+                next
+              end
+
+              block.(file)
+            end
           end
+        end
+
+        def assure_extant(path)
+          ::File.stat(path)
+        rescue Errno::ENOENT => enoent
+          raise FileError, enoent.message
         end
 
         module Defaults
