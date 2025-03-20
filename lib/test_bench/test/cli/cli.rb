@@ -77,9 +77,6 @@ module TestBench
       def self.call(arguments=nil, env: nil)
         instance = build(arguments, env:)
 
-        session = instance.run.session
-        Session.instance = session
-
         exit_code = instance.()
 
         exit(exit_code)
