@@ -1,13 +1,12 @@
 module TestBench
-  def self.activate(receiver=nil, session_store: nil)
+  def self.activate(receiver=nil, session: nil)
+    session ||= self.session
     receiver ||= TOPLEVEL_BINDING.receiver
-    session_store ||= Session::Store.instance
 
     receiver.extend(Fixture)
     receiver.extend(DeactivatedVariants)
 
-    receiver.extend(TestSession)
-    receiver.test_session_store = session_store
+    Test::Session.configure(receiver, session:, attr_name: :test_session)
   end
 
   def self.context(title=nil, session: nil, &block)
@@ -19,23 +18,30 @@ module TestBench
   end
 
   def self.evaluate(session: nil, &block)
+    original_session = Test::Session.instance
+
+    Test::Session.instance = session
+
     fixture = TestBench::Fixture::Evaluate.build(session:, &block)
     fixture.extend(DeactivatedVariants)
     fixture.()
 
     fixture.test_session.passed?
+
+  ensure
+    Test::Session.instance = original_session
   end
 
   def self.session
-    Session::Store.fetch
+    Test::Session.instance
   end
 
   def self.telemetry
-    session&.telemetry
+    session.telemetry
   end
 
   def self.register_telemetry_sink(telemetry_sink)
-    session&.register_telemetry_sink(telemetry_sink)
+    session.register_telemetry_sink(telemetry_sink)
   end
 
   module DeactivatedVariants
@@ -45,14 +51,6 @@ module TestBench
 
     def _test(title=nil, &)
       test(title)
-    end
-  end
-
-  module TestSession
-    attr_accessor :test_session_store
-
-    def test_session
-      test_session_store.fetch
     end
   end
 end
