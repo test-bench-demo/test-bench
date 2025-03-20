@@ -63,6 +63,7 @@ module TestBench
 
               path_found = File.exist?(full_path)
               if not path_found
+                session.record_event(Events::FileNotFound.new(path))
                 load(full_path) # Raise a LoadError
               end
 
@@ -146,11 +147,11 @@ module TestBench
             event_data = Telemetry::EventData.load(event_text)
             session.record_event(event_data)
 
-            case event_data.type
-            when Events::FileFinished.event_type
+            case event_data
+            when Events::FileFinished
               self.file_sequence += 1
 
-            when Events::FileTerminated.event_type
+            when Events::FileTerminated, Events::FileNotFound
               self.file_sequence += 1
 
               await_exit
@@ -162,8 +163,6 @@ module TestBench
         end
 
         def run(path)
-          assure_started
-
           one_millisecond = 1
           synchronize(one_millisecond)
 
