@@ -1,12 +1,10 @@
 module TestBench
-  def self.activate(receiver=nil, session: nil)
-    session ||= self.session
+  def self.activate(receiver=nil)
     receiver ||= TOPLEVEL_BINDING.receiver
 
     receiver.extend(Fixture)
     receiver.extend(DeactivatedVariants)
-
-    Test::Session.configure(receiver, session:, attr_name: :test_session)
+    receiver.extend(TestSession)
   end
 
   def self.context(title=nil, session: nil, &block)
@@ -29,11 +27,15 @@ module TestBench
     fixture.test_session.passed?
 
   ensure
-    Test::Session.instance = original_session
+    self.session = original_session
   end
 
   def self.session
     Test::Session.instance
+  end
+
+  def self.session=(session)
+    Test::Session.instance = session
   end
 
   def self.telemetry
@@ -51,6 +53,16 @@ module TestBench
 
     def _test(title=nil, &)
       test(title)
+    end
+  end
+
+  module TestSession
+    def test_session
+      TestBench.session
+    end
+
+    def test_session=(session)
+      TestBench.session = session
     end
   end
 end
