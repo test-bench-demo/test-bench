@@ -12,6 +12,12 @@ module TestBench
           end
         end
 
+        def self.register(telemetry)
+          File.register(telemetry)
+          Summary::Error.register(telemetry)
+          Summary.register(telemetry)
+        end
+
         def writer
           @writer ||= Test::Output::Writer::Substitute.build
         end

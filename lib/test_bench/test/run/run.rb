@@ -5,25 +5,20 @@ module TestBench
 
       include Events
 
-      def telemetry
-        @telemetry ||= Telemetry::Substitute.build
-      end
-      attr_writer :telemetry
-
       def session
         @session ||= Session::Substitute.build
       end
       attr_writer :session
 
-      def get_files
-        @get_files ||= GetFiles::Substitute.build
+      def select_files
+        @select_files ||= SelectFiles::Substitute.build
       end
-      attr_writer :get_files
+      attr_writer :select_files
 
-      def executor
-        @executor ||= Executor::Substitute.build
+      def isolate
+        @isolate ||= Isolate::Substitute.build
       end
-      attr_writer :executor
+      attr_writer :isolate
 
       def random_generator
         @random_generator ||= Pseudorandom::Generator.build
@@ -36,35 +31,26 @@ module TestBench
       attr_writer :path_sequence
 
       def self.build(exclude: nil, session: nil)
-        instance = new
-
-        GetFiles.configure(instance, exclude:)
-
-        Executor::Serial.configure(instance)
-
-        Pseudorandom::Generator.configure(instance)
-
-        if session.nil?
-          session = Session.build do |telemetry|
-            Output::File.register(telemetry)
-            Output::Summary::Error.register(telemetry)
-            Output::Summary.register(telemetry)
-          end
+        session ||= Session.build do |telemetry|
+          Output.register(telemetry)
         end
 
-        instance.telemetry = session.telemetry
+        instance = new
 
-        Session.configure(instance, session:)
+        instance.session = session
+
+        SelectFiles.configure(instance, exclude:)
+        Pseudorandom::Generator.configure(instance)
+        Isolate.configure(instance, session:)
 
         instance
       end
 
-      def self.call(path, session_store: nil, exclude: nil)
-        session_store ||= Session::Store.instance
+      def self.call(path, session: nil, exclude: nil)
+        instance = build(session:, exclude:)
 
-        instance = build(exclude:)
-
-        session_store.reset(instance.session)
+        session = instance.session
+        Session.instance = session
 
         instance.(path)
       end
@@ -87,9 +73,9 @@ module TestBench
           raise Error, "Already ran"
         end
 
-        telemetry.record(Started.build(random_generator.seed))
+        session.record_event(Started.build(random_generator.seed))
 
-        executor.start
+        isolate.start
 
         if not block.nil?
           block.(self)
@@ -99,7 +85,7 @@ module TestBench
           end
         end
 
-        executor.finish
+        isolate.stop
 
         if session.passed?
           result = true
@@ -107,7 +93,7 @@ module TestBench
           result = false
         end
 
-        telemetry.record(Finished.build(random_generator.seed, result))
+        session.record_event(Finished.build(random_generator.seed, result))
         result
       end
       alias :! :run
@@ -115,14 +101,9 @@ module TestBench
       def path(path)
         self.path_sequence += 1
 
-        get_files.(path) do |file|
-          executor.execute(file)
+        select_files.(path) do |file|
+          isolate.run(file)
         end
-
-      rescue GetFiles::FileError
-        warn "#{path}: No such file or directory"
-
-        session.record_failure
       end
       alias :<< :path
 
