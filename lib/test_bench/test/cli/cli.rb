@@ -69,7 +69,7 @@ module TestBench
 
         run = instance.run
         session = run.session
-        Parallel::Isolate.configure(run, session:)
+        Parallel::Isolate.configure(run, session)
 
         instance
       end
@@ -200,16 +200,8 @@ module TestBench
 
             parallel_processes = Integer(parallel_processes_text)
 
+            puts parallel_processes.to_s
             env['TEST_PARALLEL_PROCESSES'] = parallel_processes.to_s
-
-          when '-p', '-P', '--require-passing-test', '--no-require-passing-test'
-            if not negated?(switch)
-              require_passing_tests = 'on'
-            else
-              require_passing_tests = 'off'
-            end
-
-            env['TEST_CLI_REQUIRE_PASSING_TEST'] = require_passing_tests
 
           when '-s', '--seed'
             seed_text = switch_value!(argument_index, switch)
@@ -249,7 +241,6 @@ module TestBench
         \t                             Render output coloring and font styling escape codes (Default: #{Output::Writer::Styling.default})
         \t-j, --parallel-jobs [NUMBER]
                                        Run tests in parallel across NUMBER processes (Default: #{Parallel::Isolate::Defaults.parallel_processes})"
-        \t-p, --[no-]passing-test      Requires at least one passing test in order to exit successfully (Default: #{Defaults.require_passing_test ? 'on' : 'off'})
         \t-s, --seed NUMBER            Sets pseudo-random number seed (Default: not set)
 
         Other Options:
@@ -266,7 +257,6 @@ module TestBench
         \tTEST_OUTPUT_ONLY_FAILURE     Same as -f or --only-failure
         \tTEST_OUTPUT_STYLING          Same as -o or --output-styling
         \tTEST_PARALLEL_PROCESSES      Same as -j or --parallel-jobs
-        \tTEST_REQUIRE_PASSING_TEST    Same as -p or --passing-test
         \tTEST_SEED                    Same as -s or --seed
 
         TEXT

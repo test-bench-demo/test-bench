@@ -3,26 +3,28 @@ module TestBench
     class CLI
       module Parallel
         class Isolate
+          attr_reader :session
           attr_reader :serial_isolates
 
-          def initialize(serial_isolates)
+          def initialize(session, serial_isolates)
+            @session = session
             @serial_isolates = serial_isolates
           end
 
-          def self.build(processes: nil, session: nil)
+          def self.build(session, processes: nil)
             processes ||= Defaults.parallel_processes
 
             serial_isolates = processes.times.map do
               Run::Isolate.build(session:)
             end
 
-            new(serial_isolates)
+            new(session, serial_isolates)
           end
 
-          def self.configure(receiver, processes: nil, session: nil, attr_name: nil)
+          def self.configure(receiver, session, processes: nil, attr_name: nil)
             attr_name ||= :isolate
 
-            instance = build(processes:, session:)
+            instance = build(session, processes:)
             receiver.public_send(:"#{attr_name}=", instance)
           end
 
