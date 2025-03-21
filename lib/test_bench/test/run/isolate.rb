@@ -163,12 +163,14 @@ module TestBench
         end
 
         def run(path)
-          one_millisecond = 1
-          synchronize(one_millisecond)
+          assure_started
 
           self.pending_file_sequence += 1
 
           path_writer.puts(path)
+
+          one_millisecond = 1
+          synchronize(one_millisecond)
         end
 
         def stop
