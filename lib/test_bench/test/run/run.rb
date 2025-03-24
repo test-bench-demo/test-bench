@@ -48,7 +48,16 @@ module TestBench
 
       def self.call(path, session: nil, exclude: nil)
         instance = build(session:, exclude:)
-        instance.(path)
+
+        original_session = Session.instance
+
+        Session.instance = instance.session
+
+        begin
+          instance.(path)
+        ensure
+          Session.instance = original_session
+        end
       end
 
       def self.configure(receiver, exclude: nil, session: nil, attr_name: nil)
@@ -68,10 +77,6 @@ module TestBench
         if ran?
           raise Error, "Already ran"
         end
-
-        original_session = Session.instance
-
-        Session.instance = session
 
         session.record_event(Started.build(random_generator.seed))
 
@@ -95,9 +100,6 @@ module TestBench
 
         session.record_event(Finished.build(random_generator.seed, result))
         result
-
-      ensure
-        Session.instance = original_session
       end
       alias :! :run
 
