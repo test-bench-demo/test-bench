@@ -30,6 +30,13 @@ module TestBench
       end
       attr_writer :path_sequence
 
+      def abort_on_failure
+        @abort_on_failure.nil? ?
+          @abort_on_failure = Defaults.abort_on_failure :
+          @abort_on_failure
+      end
+      attr_writer :abort_on_failure
+
       def self.build(exclude: nil, session: nil)
         session ||= Session.build do |telemetry|
           Output.register(telemetry)
@@ -104,6 +111,10 @@ module TestBench
       alias :! :run
 
       def path(path)
+        if abort_on_failure && session.failed?
+          return
+        end
+
         self.path_sequence += 1
 
         select_files.(path) do |file|
@@ -114,6 +125,12 @@ module TestBench
 
       def ran?
         path_sequence > 0
+      end
+
+      module Defaults
+        def self.abort_on_failure
+          ENV.fetch('TEST_ABORT_ON_FAILURE', 'off') == 'on'
+        end
       end
     end
   end

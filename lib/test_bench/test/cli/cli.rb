@@ -64,12 +64,7 @@ module TestBench
 
         Output::Writer.configure(instance)
         Pseudorandom::Generator.configure(instance)
-
         Run.configure(instance)
-
-        run = instance.run
-        session = run.session
-        Parallel::Isolate.configure(run, session)
 
         instance
       end
@@ -149,6 +144,15 @@ module TestBench
 
             self.immediate_exit_code = 0
 
+          when '-a', '-A', '--abort-on-failure', '--no-abort-on-failure'
+            if not negated?(switch)
+              abort_on_failure_text = 'on'
+            else
+              abort_on_failure_text = 'off'
+            end
+
+            env['TEST_ABORT_ON_FAILURE'] = abort_on_failure_text
+
           when '-d', '--detail', '--no-detail'
             if not negated?(switch)
               detail_policy_text = 'on'
@@ -196,17 +200,6 @@ module TestBench
 
             env['TEST_OUTPUT_STYLING'] = output_styling_text
 
-          when '-j', '--parallel-processes'
-            parallel_processes_text = switch_value(argument_index) do
-              require 'etc'
-              Etc.nprocessors.to_s
-            end
-
-            parallel_processes = Integer(parallel_processes_text)
-
-            puts parallel_processes.to_s
-            env['TEST_PARALLEL_PROCESSES'] = parallel_processes.to_s
-
           when '-s', '--seed'
             seed_text = switch_value!(argument_index, switch)
 
@@ -238,13 +231,12 @@ module TestBench
         \t-v, --version                Print version and exit successfully
 
         Configuration Options:
-        \t-d, --[no]detail             Always show (or hide) details (Default: #{Session::Output::Detail.default})
+        \t-a, --[no-]abort-on-failure  Stops execution if a test fails or a test file terminates (Default: #{Test::Run::Defaults.abort_on_failure ? 'on' : 'off'})
+        \t-d, --[no-]detail            Always show (or hide) details (Default: #{Session::Output::Detail.default})
         \t-x, --[no-]exclude PATTERN   Do not execute test files matching PATTERN (Default: #{Run::SelectFiles::Defaults.exclude_patterns.inspect})
         \t-f, --[no-]only-failure      Don't display output for test files that pass (Default: #{Run::Output::File::Defaults.only_failure ? 'on' : 'off'})
         \t-o, --output-styling [on|off|detect]
         \t                             Render output coloring and font styling escape codes (Default: #{Output::Writer::Styling.default})
-        \t-j, --parallel-jobs [NUMBER]
-                                       Run tests in parallel across NUMBER processes (Default: #{Parallel::Isolate::Defaults.parallel_processes})"
         \t-s, --seed NUMBER            Sets pseudo-random number seed (Default: not set)
 
         Other Options:
@@ -256,11 +248,11 @@ module TestBench
 
         The following environment variables can also control execution:
 
+        \tTEST_ABORT_ON_FAILURE        Same as -a or --abort-on-failure
         \tTEST_DETAIL                  Same as -d or --detail
         \tTEST_EXCLUDE_FILE_PATTERN    Same as -x or --exclude-file-pattern
         \tTEST_OUTPUT_ONLY_FAILURE     Same as -f or --only-failure
         \tTEST_OUTPUT_STYLING          Same as -o or --output-styling
-        \tTEST_PARALLEL_PROCESSES      Same as -j or --parallel-jobs
         \tTEST_SEED                    Same as -s or --seed
 
         TEXT
