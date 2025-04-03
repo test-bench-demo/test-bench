@@ -271,8 +271,6 @@ module TestBench
           0
         elsif result == false
           1
-        elsif require_passing_test?
-          2
         else
           0
         end
