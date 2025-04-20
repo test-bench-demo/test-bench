@@ -32,11 +32,14 @@ module TestBench
 
         def self.call(arguments=nil, env: nil)
           instance = build(arguments, env:)
-          instance.()
+
+          result = instance.()
+
+          exit(result)
         end
 
         def call
-          result = run.() do
+          run.() do
             if not stdin.tty?
               until stdin.eof?
                 path = stdin.gets(chomp: true)
@@ -55,9 +58,6 @@ module TestBench
               run << Defaults.path
             end
           end
-
-          exit_code = result ? 0 : 1
-          exit_code
         end
       end
     end
