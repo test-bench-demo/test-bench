@@ -15,6 +15,8 @@ module TestBench
           def self.build(exclude_patterns: nil)
             exclude_patterns ||= Defaults.exclude_file_patterns
 
+            exclude_patterns = Array(exclude_patterns)
+
             instance = new
             instance.exclude_patterns = exclude_patterns
             instance
