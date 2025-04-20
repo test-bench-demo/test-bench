@@ -6,11 +6,8 @@ module TestBench
     receiver.extend(DeactivatedVariants)
     receiver.extend(TestSession)
 
-    ## Test
     session = receiver.test_session
-    if session.telemetry.sinks.none?
-      Output.register_telemetry_sink(session)
-    end
+    establish_output(session)
   end
 
   def self.context(title=nil, session: nil, &block)
@@ -28,10 +25,7 @@ module TestBench
 
     Session.establish(session)
 
-    ## Test
-    if session.telemetry.sinks.none?
-      Output.register_telemetry_sink(session)
-    end
+    establish_output(session)
 
     fixture = TestBench::Fixture::Evaluate.build(test_session: session, &block)
     fixture.extend(DeactivatedVariants)
@@ -46,6 +40,12 @@ module TestBench
 
   def self.register_telemetry_sink(telemetry_sink)
     Session.register_telemetry_sink(telemetry_sink)
+  end
+
+  def self.establish_output(session)
+    if session.telemetry.sinks.none?
+      Output.register_telemetry_sink(session)
+    end
   end
 
   module DeactivatedVariants
