@@ -5,6 +5,12 @@ module TestBench
     receiver.extend(Fixture)
     receiver.extend(DeactivatedVariants)
     receiver.extend(TestSession)
+
+    ## Test
+    session = receiver.test_session
+    if session.telemetry.sinks.none?
+      Output.register_telemetry_sink(session)
+    end
   end
 
   def self.context(title=nil, session: nil, &block)
@@ -16,34 +22,30 @@ module TestBench
   end
 
   def self.evaluate(session: nil, &block)
-    original_session = Test::Session.instance
+    session ||= Session.build
 
-    Test::Session.instance = session
+    original_session = Session.instance
 
-    fixture = TestBench::Fixture::Evaluate.build(session:, &block)
+    Session.establish(session)
+
+    ## Test
+    if session.telemetry.sinks.none?
+      Output.register_telemetry_sink(session)
+    end
+
+    fixture = TestBench::Fixture::Evaluate.build(test_session: session, &block)
     fixture.extend(DeactivatedVariants)
     fixture.()
 
-    fixture.test_session.passed?
+    result = fixture.test_session.result
+    Session::Result.resolve(result)
 
   ensure
-    self.session = original_session
-  end
-
-  def self.session
-    Test::Session.instance
-  end
-
-  def self.session=(session)
-    Test::Session.instance = session
-  end
-
-  def self.telemetry
-    session.telemetry
+    Session.establish(original_session)
   end
 
   def self.register_telemetry_sink(telemetry_sink)
-    session.register_telemetry_sink(telemetry_sink)
+    Session.register_telemetry_sink(telemetry_sink)
   end
 
   module DeactivatedVariants
@@ -58,11 +60,11 @@ module TestBench
 
   module TestSession
     def test_session
-      TestBench.session
+      Test::Automated::Session.instance
     end
 
     def test_session=(session)
-      TestBench.session = session
+      Test::Automated::Session.establish(session)
     end
   end
 end
