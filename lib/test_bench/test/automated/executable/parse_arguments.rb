@@ -83,6 +83,16 @@ module TestBench
                   $LOAD_PATH << load_path
                 end
 
+              when '-b', '--filter-backtrace'
+                filter_pattern = require_next_argument(switch)
+
+                env['TEST_FILTER_BACKTRACE_PATTERNS'] = [
+                  env['TEST_FILTER_BACKTRACE_PATTERNS'],
+                  filter_pattern
+                ].compact.join(':')
+              when '-B', '--no-filter-backtrace'
+                env['TEST_FILTER_BACKTRACE_PATTERNS'] = ''
+
               when '-d', '--detail'
                 env['TEST_OUTPUT_DETAIL'] = 'on'
               when '-D', '--no-detail'
@@ -146,6 +156,13 @@ module TestBench
               Add DIR to the load path
 
   Output Options:
+      Backtrace Filtering:
+          -b, --filter-backtrace PATTERN
+              Omits backtrace frames that match PATTERN
+              If multiple filter backtrace arguments are supplied, then frames that match any will be omitted
+          -B, --no-filter-backtrace
+              Don't omit any backtrace frames
+
       Detail:
           -d, --detail
               Always show details
@@ -190,6 +207,7 @@ module TestBench
       TEST_RUN_EXCLUDE_FILE_PATTERNS   See --exclude
       TEST_RUN_PRINT_SUMMARY           See --no-summary
       TEST_STRICT                      See --strict
+      TEST_FILTER_BACKTRACE_PATTERNS   See --filter-backtrace
       TEST_OUTPUT_DETAIL               See --detail
       TEST_OUTPUT_DEVICE               See --device
       TEST_OUTPUT_LEVEL                See --output-level
