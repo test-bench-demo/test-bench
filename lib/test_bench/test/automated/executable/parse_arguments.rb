@@ -90,8 +90,6 @@ module TestBench
                   env['TEST_FILTER_BACKTRACE_PATTERNS'],
                   filter_pattern
                 ].compact.join(':')
-              when '-B', '--no-filter-backtrace'
-                env['TEST_FILTER_BACKTRACE_PATTERNS'] = ''
 
               when '-d', '--detail'
                 env['TEST_OUTPUT_DETAIL'] = 'on'
@@ -160,8 +158,6 @@ module TestBench
           -b, --filter-backtrace PATTERN
               Omits backtrace frames that match PATTERN
               If multiple filter backtrace arguments are supplied, then frames that match any will be omitted
-          -B, --no-filter-backtrace
-              Don't omit any backtrace frames
 
       Detail:
           -d, --detail
