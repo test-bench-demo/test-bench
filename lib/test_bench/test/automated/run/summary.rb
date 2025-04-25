@@ -345,7 +345,7 @@ module TestBench
 
               error_messages = []
 
-              instance = new(file_path, status, error_messages)
+              new(file_path, status, error_messages)
             end
 
             def self.not_found(file_path)

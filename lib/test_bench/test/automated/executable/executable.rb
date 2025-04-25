@@ -2,8 +2,6 @@ module TestBench
   module Test
     module Automated
       class Executable
-        attr_reader :arguments
-
         def run
           @run ||= Run::Substitute.build
         end
